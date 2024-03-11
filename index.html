@@ -1,1 +1,60 @@
-<meta http-equiv="refresh" content="1; URL=https://t.ly/8xvpg" />
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unendliche Weiterleitung mit automatischen Popups, blinkendem Bildschirm und Audio</title>
+  <script>
+    // Automatischer Vollbildmodus
+    document.addEventListener('DOMContentLoaded', function () {
+      var elem = document.documentElement;
+      elem.requestFullscreen();
+    });
+
+    // Funktion zum Öffnen eines Popups
+    function openPopup() {
+      var newWindow = window.open("", "_blank", "width=600,height=400");
+      newWindow.document.write("<html><head><title>Popup</title></head><body><h1>Popup</h1><p>Sie werden nun unendlich oft weitergeleitet.</p><audio autoplay loop><source src='https://www.myinstants.com/media/sounds/mlg-airhorn.mp3' type='audio/mpeg'></audio></body></html>");
+      
+      // Überwache das Schließen des Popups und öffne weitere Popups
+      newWindow.addEventListener('beforeunload', function () {
+        for (var i = 0; i < 4; i++) {
+          openPopup();
+        }
+      });
+
+      setTimeout(function () {
+        newWindow.location.reload(true);
+      }, 10000); // Weiterleitung alle 500 Millisekunden (0,5 Sekunden)
+    }
+
+    // Funktion zum Wechseln der Hintergrundfarbe zwischen Schwarz und Weiß alle 100 ms
+    function blinkScreen() {
+      var body = document.body;
+      var isBlack = true;
+      setInterval(function () {
+        if (isBlack) {
+          body.style.backgroundColor = "white";
+        } else {
+          body.style.backgroundColor = "black";
+        }
+        isBlack = !isBlack;
+      }, 100); // Wechsel alle 100 Millisekunden (0,1 Sekunden)
+
+      // Öffnet automatisch ein Popup
+      setTimeout(function () {
+        openPopup();
+      }, 500); // Öffnet das Popup nach 2 Sekunden
+    }
+
+    // Unendliche Weiterleitung
+    setTimeout(function () {
+      window.location.reload(true);
+    }, 500); // Weiterleitung nach 2 Sekunden
+  </script>
+</head>
+<body onload="blinkScreen()">
+  Sie werden nun unendlich oft weitergeleitet. <a href="javascript:openPopup()">Klicken Sie hier, um ein Popup zu öffnen</a>.
+</body>
+</html>
+
