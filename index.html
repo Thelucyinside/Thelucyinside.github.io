@@ -1,62 +1,182 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aktiviere Popups um ein Mega krasses Geschenk zu bekommen!
-    (Unendliche Weiterleitung mit automatischen Popups, blinkendem Bildschirm und Audio)</title>
-  <script>
-    // Automatischer Vollbildmodus
-    document.addEventListener('DOMContentLoaded', function () {
-      var elem = document.documentElement;
-      elem.requestFullscreen();
-    });
-
-    // Funktion zum Öffnen eines Popups
-    function openPopup() {
-      var newWindow = window.open("", "_blank", "width=600,height=400");
-      newWindow.document.write("<html><head><title>Popup</title></head><body><h1>Popup</h1><p>Sie werden nun unendlich oft weitergeleitet.</p><audio autoplay loop><source src='https://www.myinstants.com/media/sounds/mlg-airhorn.mp3' type='audio/mpeg'></audio></body></html>");
-      
-      // Überwache das Schließen des Popups und öffne weitere Popups
-      newWindow.addEventListener('beforeunload', function () {
-        for (var i = 0; i < 4; i++) {
-          openPopup();
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>10c Umfrage Visualisierung</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background: #15171F;
         }
-      });
-
-      setTimeout(function () {
-        newWindow.location.reload(true);
-      }, 10000); // Weiterleitung alle 500 Millisekunden (0,5 Sekunden)
-    }
-
-    // Funktion zum Wechseln der Hintergrundfarbe zwischen Schwarz und Weiß alle 100 ms
-    function blinkScreen() {
-      var body = document.body;
-      var isBlack = true;
-      setInterval(function () {
-        if (isBlack) {
-          body.style.backgroundColor = "white";
-        } else {
-          body.style.backgroundColor = "black";
+        #chart {
+            width: 100%;
+            height: 100%;
         }
-        isBlack = !isBlack;
-      }, 100); // Wechsel alle 100 Millisekunden (0,1 Sekunden)
-
-      // Öffnet automatisch ein Popup
-      setTimeout(function () {
-        openPopup();
-      }, 500); // Öffnet das Popup nach 2 Sekunden
-    }
-
-    // Unendliche Weiterleitung
-    setTimeout(function () {
-      window.location.reload(true);
-    }, 500); // Weiterleitung nach 2 Sekunden
-  </script>
+        .tooltip {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.9);
+            color: #000;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            pointer-events: none;
+        }
+        #questionSelect {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            padding: 10px;
+            font-size: 16px;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+        }
+        #questionSelect option {
+            background-color: #000;
+        }
+    </style>
 </head>
-<body onload="blinkScreen()">
-  Sie werden nun unendlich oft weitergeleitet. 
-  Na? Schon bereut den qr code Gescant zu haben?<a href="javascript:openPopup()">Klicken Sie hier, um ein Popup zu öffnen</a>.
+<body>
+    <select id="questionSelect"></select>
+    <div id="chart"></div>
+
+    <script>
+        let questions = [];
+        let csvData = {};
+
+        function processData(data) {
+            questions = Object.keys(data[0]).filter(key => key !== "Zeitstempel");
+            
+            questions.forEach(question => {
+                csvData[question] = [];
+                let counts = {};
+                data.forEach(row => {
+                    let answer = row[question];
+                    if (answer && answer.trim() !== "") {
+                        counts[answer] = (counts[answer] || 0) + 1;
+                    }
+                });
+                for (let [name, value] of Object.entries(counts)) {
+                    csvData[question].push({name, value});
+                }
+            });
+
+            const select = document.getElementById("questionSelect");
+            questions.forEach(question => {
+                const option = document.createElement("option");
+                option.value = question;
+                option.text = question;
+                select.appendChild(option);
+            });
+
+            select.addEventListener("change", updateChart);
+            updateChart();
+        }
+
+        const colors = d3.scaleOrdinal(d3.schemeCategory10);
+
+        function createPieChart(data) {
+            d3.select("#chart").selectAll("*").remove();
+
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            const radius = Math.min(width, height) / 2.5;
+
+            const svg = d3.select("#chart")
+                .append("svg")
+                .attr("width", width)
+                .attr("height", height)
+                .append("g")
+                .attr("transform", `translate(${width / 2},${height / 2})`);
+
+            const pie = d3.pie()
+                .value(d => d.value)
+                .sort(null);
+
+            const arc = d3.arc()
+                .innerRadius(radius * 0.3)
+                .outerRadius(radius);
+
+            const outerArc = d3.arc()
+                .innerRadius(radius * 1.1)
+                .outerRadius(radius * 1.1);
+
+            const arcs = svg.selectAll("arc")
+                .data(pie(data))
+                .enter()
+                .append("g")
+                .attr("class", "arc");
+
+            arcs.append("path")
+                .attr("d", arc)
+                .attr("fill", (d, i) => colors(i))
+                .style("filter", "url(#glow)")
+                .on("mouseover", function(event, d) {
+                    d3.select(this)
+                        .transition()
+                        .duration(200)
+                        .attr("d", d3.arc().innerRadius(radius * 0.3).outerRadius(radius * 1.1));
+                    
+                    showTooltip(event, d);
+                })
+                .on("mouseout", function() {
+                    d3.select(this)
+                        .transition()
+                        .duration(200)
+                        .attr("d", arc);
+                    
+                    hideTooltip();
+                });
+
+            const labelArc = d3.arc()
+                .innerRadius(radius * 0.9)
+                .outerRadius(radius * 0.9);
+
+            arcs.append("text")
+                .attr("transform", d => `translate(${labelArc.centroid(d)})`)
+                .attr("dy", ".35em")
+                .text(d => d.data.name)
+                .style("text-anchor", "middle")
+                .style("font-size", "12px")
+                .style("fill", "white");
+
+        }
+
+        function showTooltip(event, d) {
+            const tooltip = d3.select("body").append("div")
+                .attr("class", "tooltip")
+                .style("opacity", 0);
+
+            tooltip.transition()
+                .duration(200)
+                .style("opacity", .9);
+            tooltip.html(`${d.data.name}: ${d.data.value}`)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 28) + "px");
+        }
+
+        function hideTooltip() {
+            d3.select(".tooltip").remove();
+        }
+
+        function updateChart() {
+            const selectedQuestion = document.getElementById("questionSelect").value;
+            const data = csvData[selectedQuestion] || [];
+            createPieChart(data);
+        }
+
+        d3.csv("10c_Umfrage.csv").then(processData);
+
+        window.addEventListener('resize', updateChart);
+    </script>
 </body>
 </html>
-
